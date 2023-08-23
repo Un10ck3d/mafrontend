@@ -29,12 +29,12 @@ export default {
     const playerVolumeDefaults = computed(() => ({
       class: 'player-volume',
       hideDetails: true,
-      trackSize: 2,
-      thumbSize: isThumbHidden.value ? 0 : 10,
-      step: 2,
+      trackSize: 3,
+      thumbSize: isThumbHidden.value ? 0 : 15,
+      step: 1,
       elevation: 0,
       disabled: !props.isPowered,
-      style: `width: ${props.width}; height:${props.height}; display: inline-grid; ${props.style}`,
+      style: `width: ${props.width}; height:${props.height}; display: inline-grid; ${props.style}; color="#FFFFFF"`,
     }));
 
     const playerVolumeProps = computed(() => ({

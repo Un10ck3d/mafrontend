@@ -1,10 +1,11 @@
 <template>
   <!-- active player -->
   <Button
+    class="excludeClosePlayerSelector"
     variant="icon"
     :ripple="false"
     :icon="getBreakpointValue('bp6') ? false : true"
-    @click="store.showPlayersMenu = true"
+    @click="store.showPlayersMenu = !store.showPlayersMenu"
   >
     <v-badge v-if="store.selectedPlayer?.group_childs.length" size="small" :content="curGroupPlayers">
       <v-icon :color="props.color ? color : ''" :size="24">mdi-speaker-multiple</v-icon>

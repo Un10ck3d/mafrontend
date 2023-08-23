@@ -272,9 +272,10 @@
           </div>
         </div>
         <div class="fullscreen-media-controls-bottom" if="activePlayerQueue">
-          <div v-if="getBreakpointValue({ breakpoint: 'bp3', condition: 'lt' })">
-            <Button @click="store.showPlayersMenu = true">
+          <div v-if="getBreakpointValue({ breakpoint: 'bp3', condition: 'lt' })" class="excludeClosePlayerSelector">
+            <Button class="excludeClosePlayerSelector" @click="store.showPlayersMenu = !store.showPlayersMenu">
               <v-badge
+                class="excludeClosePlayerSelector"
                 v-if="curGroupPlayers && curGroupPlayers.length > 0"
                 :content="store.selectedPlayer?.group_childs.length"
                 :color="$vuetify.theme.current.dark ? props.colorPalette.lightColor : props.colorPalette.darkColor"

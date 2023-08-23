@@ -1,32 +1,61 @@
 <template>
   <!-- players side menu -->
-  <v-navigation-drawer
-    v-model="store.showPlayersMenu"
-    location="right"
-    app
-    clipped
-    temporary
-    touchless
-    width="290"
-    style="z-index: 9999"
+  <v-card
+    v-if="store.showPlayersMenu"
+    v-click-outside="{
+      handler: () => {
+        store.showPlayersMenu = !store.showPlayersMenu;
+      },
+      include: excludeClick,
+    }"
+    width="280"
+    location="bottom end"
+    transition="scale-transition"
+    style="z-index: 9999; position: absolute"
   >
     <!-- heading with Players as title-->
     <v-card-title class="headline">
       <b>{{ $t('players') }}</b>
+      <!-- settings button -->
+      <v-btn
+        variant="plain"
+        style="position: absolute; right: 50px; top: 0px"
+        icon="mdi-cog-outline"
+        to="/settings/players"
+        @click="store.showPlayersMenu = !store.showPlayersMenu"
+      />
+      <!-- close button in the top right (accessibility reasons)-->
+      <v-btn
+        variant="plain"
+        style="position: absolute; right: 0px; top: 0px"
+        icon="mdi-close"
+        @click="store.showPlayersMenu = !store.showPlayersMenu"
+      />
     </v-card-title>
 
-    <!-- close button in the top right (accessibility reasons)-->
-    <v-btn
-      variant="plain"
-      style="position: absolute; right: -10px; top: 0px"
-      icon="mdi-close"
-      dark
-      @click="store.showPlayersMenu = !store.showPlayersMenu"
-    />
     <v-divider />
 
-    <!-- collapsable player rows-->
+    <!-- <v-list-item
+        v-for="player in sortedPlayers"
+        :key="player.player_id"
+        :title="player.player_id"
+        :disabled="!player.available"
+        subtitle="Lorem ipsum dolor sit amet consectetur adipisicing elit"
+        flat
+      ></v-list-item> -->
     <v-expansion-panels v-model="panelItem" focusable accordion flat>
+      <v-expansion-panel>
+        <v-expansion-panel-title><v-title>Currently Playing</v-title></v-expansion-panel-title>
+        <v-expansion-panel-text variant="contain">
+          <v-list flat>
+            <PlayerControl v-for="player in sortedPlayers" :key="player.player_id" :player="player" />
+          </v-list>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
+    <!-- collapsable player rows-->
+    <!-- <v-expansion-panels v-model="panelItem" focusable accordion flat>
       <v-expansion-panel
         v-for="player in sortedPlayers"
         :id="player.player_id"
@@ -47,9 +76,9 @@
           <ListItem>
             <template #prepend>
               <v-icon
-                size="50"
+                size="25"
                 :icon="player.group_childs.length > 0 ? 'mdi-speaker-multiple' : 'mdi-speaker'"
-                color="primary"
+                color="#FFF"
               />
             </template>
             <template #title>
@@ -78,15 +107,15 @@
           <VolumeControl :player="player" />
         </v-expansion-panel-text>
       </v-expansion-panel>
-    </v-expansion-panels>
-  </v-navigation-drawer>
+    </v-expansion-panels> -->
+  </v-card>
 </template>
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, onMounted, ref, watch } from 'vue';
 import { Player, PlayerState } from '@/plugins/api/interfaces';
 import { store } from '@/plugins/store';
-import VolumeControl from '@/components/VolumeControl.vue';
+import PlayerControl from '@/components/PlayerControl.vue';
 import { api } from '@/plugins/api';
 import { getPlayerName, truncateString } from '@/helpers/utils';
 import ListItem from '@/components/mods/ListItem.vue';
@@ -146,6 +175,10 @@ const scrollToTop = function (playerId: string) {
     const elmnt = shadowRoot.value?.getElementById(playerId);
     elmnt?.scrollIntoView({ behavior: 'smooth' });
   }, 0);
+};
+
+const excludeClick = () => {
+  return [document.querySelector('.excludeClosePlayerSelector')];
 };
 
 const playerActive = function (
