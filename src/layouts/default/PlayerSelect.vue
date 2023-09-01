@@ -1,5 +1,5 @@
 <template>
-  <!-- players side menu -->
+  <!-- players menu -->
   <v-card
     v-if="store.showPlayersMenu"
     v-click-outside="{
@@ -14,100 +14,61 @@
     style="z-index: 9999; position: absolute"
   >
     <!-- heading with Players as title-->
-    <v-card-title class="headline">
-      <b>{{ $t('players') }}</b>
+    <v-card-title style="padding: 10px; justify-content: space-between; display: flex" class="headline">
+      <h1 style="margin-top: auto; margin-bottom: auto; margin-left: 5px">{{ $t('players') }}</h1>
       <!-- settings button -->
-      <v-btn
-        variant="plain"
-        style="position: absolute; right: 50px; top: 0px"
-        icon="mdi-cog-outline"
-        to="/settings/players"
-        @click="store.showPlayersMenu = !store.showPlayersMenu"
-      />
-      <!-- close button in the top right (accessibility reasons)-->
-      <v-btn
-        variant="plain"
-        style="position: absolute; right: 0px; top: 0px"
-        icon="mdi-close"
-        @click="store.showPlayersMenu = !store.showPlayersMenu"
-      />
+      <div>
+        <v-btn
+          variant="plain"
+          style="font-size: large; font-weight: bolder; opacity: 100%"
+          icon="mdi-cog-outline"
+          to="/settings/players"
+          @click="store.showPlayersMenu = !store.showPlayersMenu"
+        />
+        <!-- close button in the top right (accessibility reasons)-->
+        <v-btn
+          style="font-size: x-large; font-weight: bolder; opacity: 100%"
+          variant="plain"
+          icon="mdi-close"
+          @click="store.showPlayersMenu = !store.showPlayersMenu"
+        />
+      </div>
     </v-card-title>
 
     <v-divider />
 
-    <!-- <v-list-item
-        v-for="player in sortedPlayers"
-        :key="player.player_id"
-        :title="player.player_id"
-        :disabled="!player.available"
-        subtitle="Lorem ipsum dolor sit amet consectetur adipisicing elit"
-        flat
-      ></v-list-item> -->
-    <v-expansion-panels v-model="panelItem" focusable accordion flat>
+    <v-expansion-panels v-model="panelItem" mandatory="force" focusable accordion flat>
       <v-expansion-panel>
-        <v-expansion-panel-title><v-title>Currently Playing</v-title></v-expansion-panel-title>
+        <v-expansion-panel-title style="padding: 15px"
+          ><h3 style="font-weight: bold">Currently Playing</h3></v-expansion-panel-title
+        >
         <v-expansion-panel-text variant="contain">
           <v-list flat>
-            <PlayerControl v-for="player in sortedPlayers" :key="player.player_id" :player="player" />
+            <PlayerControl v-for="player in activePlayers" :key="player.player_id" :player="player" />
+          </v-list>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+      <v-expansion-panel>
+        <v-expansion-panel-title style="padding: 15px"
+          ><h3 style="font-weight: bold">Other Players</h3></v-expansion-panel-title
+        >
+        <v-expansion-panel-text variant="contain">
+          <v-list flat>
+            <PlayerControl v-for="player in nonActivePlayers" :key="player.player_id" :player="player" />
+          </v-list>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+      <v-expansion-panel>
+        <v-expansion-panel-title style="padding: 15px"
+          ><h3 style="font-weight: bold">Other Groups</h3></v-expansion-panel-title
+        >
+        <v-expansion-panel-text variant="contain">
+          <v-list flat>
+            <PlayerControl v-for="player in groupedPlayers" :key="player.player_id" :player="player" />
           </v-list>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
-
-    <!-- collapsable player rows-->
-    <!-- <v-expansion-panels v-model="panelItem" focusable accordion flat>
-      <v-expansion-panel
-        v-for="player in sortedPlayers"
-        :id="player.player_id"
-        :key="player.player_id"
-        :disabled="!player.available"
-        flat
-      >
-        <v-expansion-panel-title
-          class="playerrow"
-          :style="store.selectedPlayer?.player_id == player.player_id ? 'padding:0;' : 'padding:0'"
-          expand-icon="mdi-chevron-down"
-          collapse-icon="mdi-chevron-up"
-          @click="
-            store.selectedPlayer = player;
-            scrollToTop(player.player_id);
-          "
-        >
-          <ListItem>
-            <template #prepend>
-              <v-icon
-                size="25"
-                :icon="player.group_childs.length > 0 ? 'mdi-speaker-multiple' : 'mdi-speaker'"
-                color="#FFF"
-              />
-            </template>
-            <template #title>
-              <div>
-                <b>{{ truncateString(getPlayerName(player), 20) }}</b>
-              </div>
-            </template>
-            <template #subtitle>
-              <div v-if="!player.powered" class="text-body-2" style="line-height: 1em">
-                {{ $t('state.off') }}
-              </div>
-              <div
-                v-else-if="player.active_source != player.player_id && api.queues[player.active_source]"
-                class="text-body-2"
-                style="line-height: 1em"
-              >
-                {{ $t('state.' + player.state) }} ({{ api.queues[player.active_source].display_name }})
-              </div>
-              <div v-else class="text-body-2" style="line-height: 1em">
-                {{ $t('state.' + player.state) }}
-              </div>
-            </template>
-          </ListItem>
-        </v-expansion-panel-title>
-        <v-expansion-panel-text variant="contain">
-          <VolumeControl :player="player" />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels> -->
   </v-card>
 </template>
 
@@ -132,6 +93,42 @@ const sortedPlayers = computed(() => {
     res.push(player);
   }
   return res.slice().sort((a, b) => (a.display_name.toUpperCase() > b.display_name?.toUpperCase() ? 1 : -1));
+});
+
+const activePlayers = computed(() => {
+  const res: Player[] = [];
+  for (const player of sortedPlayers.value) {
+    // ignore non playing players
+    if (player.state != PlayerState.PLAYING) continue;
+    // ignore groups
+    if (player.group_childs.length > 0) continue;
+    res.push(player);
+  }
+  return res;
+});
+
+const nonActivePlayers = computed(() => {
+  const res: Player[] = [];
+  for (const player of sortedPlayers.value) {
+    // ignore playing players
+    if (player.state == PlayerState.PLAYING) continue;
+    // ignore groups
+    if (player.group_childs.length > 0) continue;
+    res.push(player);
+  }
+  return res;
+});
+
+const groupedPlayers = computed(() => {
+  const res: Player[] = [];
+  for (const player of sortedPlayers.value) {
+    // ignore playing players
+    if (player.state == PlayerState.PLAYING) continue;
+    // ignore non groups
+    if (player.group_childs.length == 0) continue;
+    res.push(player);
+  }
+  return res;
 });
 
 //watchers
@@ -168,14 +165,6 @@ onMounted(() => {
   shadowRoot.value = getCurrentInstance()?.vnode?.el?.getRootNode();
   checkDefaultPlayer();
 });
-const scrollToTop = function (playerId: string) {
-  if (lastClicked.value == playerId) return;
-  lastClicked.value = playerId;
-  setTimeout(() => {
-    const elmnt = shadowRoot.value?.getElementById(playerId);
-    elmnt?.scrollIntoView({ behavior: 'smooth' });
-  }, 0);
-};
 
 const excludeClick = () => {
   return [document.querySelector('.excludeClosePlayerSelector')];
